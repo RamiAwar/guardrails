@@ -239,7 +239,6 @@ def get_reask_prompt(
 
 def reask_json_as_dict(json: Dict) -> Dict:
     """If a ReAsk object exists in the JSON, return it as a dictionary."""
-
     def _reask_json_as_dict(json_object: Any) -> Any:
         if isinstance(json_object, dict):
             return {

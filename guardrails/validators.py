@@ -151,7 +151,6 @@ def filter_in_dict(schema: Dict) -> Dict:
 
 def register_validator(name: str, data_type: Union[str, List[str]]):
     """Register a validator for a data type."""
-
     def decorator(cls: type):
         """Register a validator for a data type."""
         nonlocal data_type
@@ -1122,7 +1121,8 @@ class ExtractedSummarySentencesMatch(Validator):
 
 @register_validator(name="reading-time", data_type="string")
 class ReadingTime(Validator):
-    """Validate that the a string can be read in less than a certain amount of time."""
+    """Validate that the a string can be read in less than a certain amount of
+    time."""
 
     def __init__(self, reading_time: int, on_fail: str = "fix"):
         super().__init__(on_fail=on_fail, max_time=reading_time)
@@ -1152,13 +1152,15 @@ class ReadingTime(Validator):
 
 @register_validator(name="extractive-summary", data_type="string")
 class ExtractiveSummary(Validator):
-    """Validate that a string is a valid extractive summary of a given document.
+    """Validate that a string is a valid extractive summary of a given
+    document.
 
-    This validator does a fuzzy match between the sentences in the summary and the
-    sentences in the document. Each sentence in the summary must be similar to at
-    least one sentence in the document. After the validation, the summary is updated
-    to include the sentences from the document that were matched, and the citations
-    for those sentences are added to the end of the summary.
+    This validator does a fuzzy match between the sentences in the
+    summary and the sentences in the document. Each sentence in the
+    summary must be similar to at least one sentence in the document.
+    After the validation, the summary is updated to include the
+    sentences from the document that were matched, and the citations for
+    those sentences are added to the end of the summary.
     """
 
     def __init__(
@@ -1181,7 +1183,6 @@ class ExtractiveSummary(Validator):
 
     def validate(self, key: str, value: Any, schema: Union[Dict, List]) -> Dict:
         """Make sure each sentence was precisely copied from the document."""
-
         try:
             from thefuzz import fuzz
         except ImportError:
@@ -1244,8 +1245,9 @@ class ExtractiveSummary(Validator):
 class RemoveRedundantSentences(Validator):
     """Remove redundant sentences from a string.
 
-    This validator removes sentences from a string that are similar to other sentences
-    in the string. This is useful for removing repetitive sentences from a string.
+    This validator removes sentences from a string that are similar to
+    other sentences in the string. This is useful for removing
+    repetitive sentences from a string.
     """
 
     def __init__(
@@ -1256,7 +1258,6 @@ class RemoveRedundantSentences(Validator):
 
     def validate(self, key: str, value: Any, schema: Union[Dict, List]) -> Dict:
         """Remove redundant sentences from a string."""
-
         try:
             from thefuzz import fuzz
         except ImportError:
@@ -1307,7 +1308,8 @@ class RemoveRedundantSentences(Validator):
 
 @register_validator(name="saliency-check", data_type="string")
 class SaliencyCheck(Validator):
-    """Check that the summary covers the list of topics present in the document."""
+    """Check that the summary covers the list of topics present in the
+    document."""
 
     def __init__(
         self,
@@ -1352,7 +1354,6 @@ class SaliencyCheck(Validator):
 
     def _get_topics(self, text: str, topics: Optional[List[str]] = None) -> List[str]:
         """Extract topics from a string."""
-
         from guardrails import Guard
 
         topics_seed = ""

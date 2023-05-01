@@ -42,10 +42,10 @@ class DataType:
     def iter(
         self, element: ET._Element
     ) -> Generator[Tuple[str, "DataType", ET._Element], None, None]:
-        """
-        Iterate over the children of an element.
+        """Iterate over the children of an element.
 
-        Yields tuples of (name, child_data_type, child_element) for each child.
+        Yields tuples of (name, child_data_type, child_element) for each
+        child.
         """
         for el_child in element:
             if element.tag == "list":

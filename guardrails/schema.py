@@ -432,7 +432,6 @@ class Schema2Prompt:
     @staticmethod
     def deconstruct_choice(root: ET._Element) -> ET._Element:
         """Deconstruct a choice element into a string and cases."""
-
         def _inner(el: str) -> ET._Element:
             el = ET.fromstring(el)
             el_copy = ET.Element(el.tag, **el.attrib)

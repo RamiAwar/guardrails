@@ -144,7 +144,6 @@ class Runner:
             else:
                 instructions = None
                 prompt = None
-
             # Call: run the API, and convert to dict.
             output, output_as_dict = self.call(index, instructions, prompt, api, output)
 
@@ -210,7 +209,8 @@ class Runner:
     def post_process(self, output: str) -> str:
         """Post-process the raw output before parsing it.
 
-        If the output is surrounded by triple backticks, remove them."""
+        If the output is surrounded by triple backticks, remove them.
+        """
         output = output.strip()
         if output.startswith("```"):
             output = output[3:]
@@ -249,6 +249,7 @@ class Runner:
                 output_as_dict = json.loads(output, strict=False)
             except json.decoder.JSONDecodeError as e:
                 output_as_dict = None
+                print("JSON ERROR", e)
                 error = e
 
             action.log(

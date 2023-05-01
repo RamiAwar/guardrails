@@ -1,3 +1,4 @@
+from functools import partial
 import json
 import os
 from string import Template
@@ -44,7 +45,9 @@ I will give you a list of examples. Write a SQL query similar to the examples be
 
 
 def example_formatter(
-    input: str, output: str, output_schema: Optional[Callable] = None
+    input: str,
+    output: str,
+    output_schema: Optional[Callable] = None,
 ) -> str:
     if output_schema is not None:
         output = output_schema(output)
@@ -64,12 +67,12 @@ class Text2Sql:
         conn_str: str,
         schema_file: Optional[str] = None,
         examples: Optional[Dict] = None,
-        embedding: Optional[EmbeddingBase] = OpenAIEmbedding,
+        embedding: Optional[EmbeddingBase] = None,
         vector_db: Optional[VectorDBBase] = Faiss,
         document_store: Optional[DocumentStoreBase] = EphemeralDocumentStore,
         rail_spec: Optional[str] = None,
         rail_params: Optional[Dict] = None,
-        example_formatter: Optional[Callable] = example_formatter,
+        ex_formatter: Optional[Callable] = None,
         reask_prompt: Optional[str] = REASK_PROMPT,
         llm_api: Optional[PromptCallable] = openai.Completion.create,
         num_relevant_examples: int = 2,
@@ -87,8 +90,12 @@ class Text2Sql:
             example_formatter: Fn to format examples. Defaults to example_formatter.
             reask_prompt: Prompt to use for reasking. Defaults to REASK_PROMPT.
         """
-
-        self.example_formatter = example_formatter
+        if ex_formatter is None:
+            self.example_formatter = partial(
+                example_formatter, output_schema=self.output_schema_formatter
+            )
+        else:
+            self.example_formatter = ex_formatter
         self.llm_api = llm_api
 
         # Initialize the SQL driver.
@@ -108,6 +115,8 @@ class Text2Sql:
         )
 
         # Initialize the document store.
+        if not embedding:
+            embedding = OpenAIEmbedding()
         self.store = self._create_docstore_with_examples(
             examples, embedding, vector_db, document_store
         )
@@ -143,7 +152,7 @@ class Text2Sql:
     def _create_docstore_with_examples(
         self,
         examples: Optional[Dict],
-        embedding: EmbeddingBase,
+        embedder: EmbeddingBase,
         vector_db: VectorDBBase,
         document_store: DocumentStoreBase,
     ) -> Optional[DocumentStoreBase]:
@@ -151,14 +160,14 @@ class Text2Sql:
             return None
 
         """Add examples to the document store."""
-        e = embedding()
         if vector_db == Faiss:
-            db = Faiss.new_flat_l2_index(e.output_dim, embedder=e)
+            db = Faiss.new_flat_l2_index(embedder.output_dim, embedder=embedder)
         else:
             raise NotImplementedError(f"VectorDB {vector_db} is not implemented.")
         store = document_store(db)
         store.add_texts(
-            {example["question"]: {"ctx": example["query"]} for example in examples}
+            {example["question"]: {"ctx": example["query"]} for example in examples},
+            verbose=True,
         )
         return store
 
@@ -168,8 +177,7 @@ class Text2Sql:
 
     def __call__(self, text: str) -> str:
         """Run text2sql on a text query and return the SQL query."""
-
-        if self.store is not None:
+        if self.store is not None and self.num_relevant_examples > 0:
             similar_examples = self.store.search(text, self.num_relevant_examples)
             similar_examples_prompt = "\n".join(
                 self.example_formatter(example.text, example.metadata["ctx"])
@@ -179,7 +187,7 @@ class Text2Sql:
             similar_examples_prompt = ""
 
         try:
-            output = self.guard(
+            dict_output = self.guard(
                 self.llm_api,
                 prompt_params={
                     "nl_instruction": text,
@@ -187,7 +195,11 @@ class Text2Sql:
                     "db_info": str(self.sql_schema),
                 },
                 max_tokens=512,
-            )[1]["generated_sql"]
+            )[1]
+            if "generated_sql" in dict_output:
+                output = dict_output["generated_sql"]
+            else:
+                output = list(dict_output.values())[0]
         except TypeError:
             output = None
 

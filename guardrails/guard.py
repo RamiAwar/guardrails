@@ -87,7 +87,6 @@ class Guard:
     @reask_prompt.setter
     def reask_prompt(self, reask_prompt: Union[str, Prompt]):
         """Set the reask prompt."""
-
         if isinstance(reask_prompt, str):
             reask_prompt = Prompt(reask_prompt)
 

@@ -4,6 +4,8 @@ from collections import namedtuple
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from tqdm.auto import tqdm
+
 from guardrails.vectordb import VectorDBBase
 
 try:
@@ -18,8 +20,9 @@ except ImportError:
 class Document:
     """Document holds text and metadata of a document.
 
-    Examples of documents are PDFs, Word documents, etc. A collection of related text
-    in an NLP application can be thought of a document as well.
+    Examples of documents are PDFs, Word documents, etc. A collection of
+    related text in an NLP application can be thought of a document as
+    well.
     """
 
     id: str
@@ -36,7 +39,8 @@ PageCoordinates = namedtuple("PageCoordinates", ["doc_id", "page_num"])
 class Page:
     """Page holds text and metadata of a page in a document.
 
-    It also containts the coordinates of the page in the document."""
+    It also containts the coordinates of the page in the document.
+    """
 
     cordinates: PageCoordinates
     text: str
@@ -44,8 +48,8 @@ class Page:
 
 
 class DocumentStoreBase(ABC):
-    """
-    Abstract class for a store that can store text, and metadata from documents.
+    """Abstract class for a store that can store text, and metadata from
+    documents.
 
     The store can be queried by text for similar documents.
     """
@@ -64,8 +68,7 @@ class DocumentStoreBase(ABC):
 
     @abstractmethod
     def search(self, query: str, k: int = 4) -> List[Page]:
-        """Searches for pages which contain the text similar to
-        the query.
+        """Searches for pages which contain the text similar to the query.
 
         Args:
             query: Text to search for.
@@ -106,10 +109,8 @@ class DocumentStoreBase(ABC):
 
 
 class EphemeralDocumentStore(DocumentStoreBase):
-    """
-    EphemeralDocumentStore is a document store that stores the documents on
-    local disk and use a ephemeral vector store like Faiss
-    """
+    """EphemeralDocumentStore is a document store that stores the documents on
+    local disk and use a ephemeral vector store like Faiss."""
 
     def __init__(self, vector_db: VectorDBBase, path: Optional[str] = None):
         """Creates a new EphemeralDocumentStore.
@@ -148,9 +149,13 @@ class EphemeralDocumentStore(DocumentStoreBase):
         self.add_document(doc)
         return doc.id
 
-    def add_texts(self, texts: Dict[str, Dict[Any, Any]]) -> List[str]:
+    def add_texts(
+        self, texts: Dict[str, Dict[Any, Any]], verbose: bool = False
+    ) -> List[str]:
         doc_ids = []
-        for text, meta in texts.items():
+        for text, meta in tqdm(
+            texts.items(), total=len(texts), disable=not verbose, desc="Adding texts"
+        ):
             doc_id = self.add_text(text, meta)
             doc_ids.append(doc_id)
         return doc_ids
